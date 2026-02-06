@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Namaz Vakitleri - Dubai</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+
+        .prayer-times {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .prayer-time {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+
+        .prayer-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .prayer-time-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+            font-size: 1.2rem;
+            padding: 40px;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .debug {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #333;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .prayer-name {
+                font-size: 1.2rem;
+            }
+
+            .prayer-time-value {
+                font-size: 1.4rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🕌 Namaz Vakitleri</h1>
+        <div class="subtitle">Dubai, UAE</div>
+        <div id="content">
+            <div class="loading">Yükleniyor...</div>
+        </div>
+        <div id="debug" class="debug"></div>
+    </div>
+
+    <script>
+        function log(message) {
+            console.log(message);
+            const debugDiv = document.getElementById('debug');
+            debugDiv.style.display = 'block';
+            debugDiv.innerHTML += message + '<br>';
+        }
+
+        async function loadPrayerTimes() {
+            const contentDiv = document.getElementById('content');
+            
+            try {
+                log('Fetching prayer times from function...');
+                
+                // Call the Netlify function
+                const response = await fetch('/.netlify/functions/prayer-times');
+                
+                log('Response status: ' + response.status);
+                
+                if (!response.ok) {
+                    throw new Error('HTTP error ' + response.status);
+                }
+                
+                const data = await response.json();
+                log('Response data: ' + JSON.stringify(data, null, 2));
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Unknown error');
+                }
+                
+                // Display the prayer times
+                displayPrayerTimes(data.times);
+                
+            } catch (error) {
+                log('ERROR: ' + error.message);
+                contentDiv.innerHTML = `
+                    <div class="error">
+                        <h3>Yüklenirken Hata Oluştu</h3>
+                        <p>${error.message}</p>
+                        <p style="margin-top: 10px; font-size: 0.9em;">
+                            Lütfen sayfayı yenileyin veya daha sonra tekrar deneyin.
+                        </p>
+                    </div>
+                `;
+            }
+        }
+
+        function displayPrayerTimes(times) {
+            const contentDiv = document.getElementById('content');
+            
+            let html = '<div class="prayer-times">';
+            
+            // Display each prayer time
+            for (const [name, time] of Object.entries(times)) {
+                html += `
+                    <div class="prayer-time">
+                        <span class="prayer-name">${name}</span>
+                        <span class="prayer-time-value">${time}</span>
+                    </div>
+                `;
+            }
+            
+            html += '</div>';
+            
+            contentDiv.innerHTML = html;
+            log('Prayer times displayed successfully!');
+        }
+
+        // Load prayer times when page loads
+        document.addEventListener('DOMContentLoaded', loadPrayerTimes);
+    </script>
+</body>
+</html>
